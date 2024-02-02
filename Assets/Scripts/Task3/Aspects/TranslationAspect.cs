@@ -1,6 +1,5 @@
 ﻿using Task3.AuthoringAndComponents;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -17,13 +16,13 @@ namespace Task3.Aspects
         {
             ref var direction = ref _headingComponent.ValueRW.Value;
             ref var position = ref _localTransform.ValueRW.Position;
-            _localTransform.ValueRW.Rotation = _localToWorld.ValueRO.Rotation;//todo write only the first time
+            _localTransform.ValueRW.Rotation = _localToWorld.ValueRO.Rotation;
             position = _localToWorld.ValueRO.Position + direction * deltaTime * 10f;
-
+            
             _localTransform.ValueRW.Position = position;
             
             const int vectorLength = 3;
-
+            
             for (int i = 0; i < vectorLength; i++)
             {
                 if (IsOutOfBounds(i))
@@ -40,11 +39,5 @@ namespace Task3.Aspects
             var position = _localTransform.ValueRO.Position[axisIndex];
             return position > origin + extent || position < origin - extent;
         } 
-    }
-
-    public struct TranslationBoundsSharedComponent : ISharedComponentData
-    {
-        public float3 BoundsExtents;
-        public float3 Origin;
     }
 }

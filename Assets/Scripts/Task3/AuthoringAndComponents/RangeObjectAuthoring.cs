@@ -1,38 +1,42 @@
 ﻿using System;
-using System.Linq;
 using Task3.Aspects;
 using Task3.AuthoringAndComponents;
-using Task3.Systems;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Rendering;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 namespace Task3.Authoring
 {
+    [Serializable]
+    public class RangeSettings
+    {
+        [Range(0, 1)] public float NormalizedRange;
+        public Color RangeColor;
+    }
+    
     public class RangeObjectAuthoring : MonoBehaviour
     {
         [SerializeField] private float _rangesMultiplier;
-        [SerializeField] [Range(0,1)] private float[] _normalizedRanges;
+        [SerializeField] private RangeSettings[] _rangeSettings;
+        [SerializeField] private Color _infinityColor;
 
         private void OnValidate()
         {
-            if (_normalizedRanges == null || _normalizedRanges.Length < 1)
+            if (_rangeSettings == null || _rangeSettings.Length < 1)
             {
                 return;
             }
 
             bool updateBake = false;
-            float prevMin = _normalizedRanges[0];
-            for (int i = 1; i < _normalizedRanges.Length; i++)
+            float prevMin = _rangeSettings[0].NormalizedRange;
+            for (int i = 1; i < _rangeSettings.Length; i++)
             {
-                float currentMin = _normalizedRanges[i];
+                float currentMin = _rangeSettings[i].NormalizedRange;
                 if (currentMin < prevMin)
                 {
-                    _normalizedRanges[i] = prevMin;
+                    _rangeSettings[i].NormalizedRange = prevMin;
                     updateBake = true;
                 }
                 else
@@ -53,7 +57,7 @@ namespace Task3.Authoring
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
-                var ranges = authoring._normalizedRanges;
+                var ranges = authoring._rangeSettings;
                 var multiplier = authoring._rangesMultiplier;
                 
                 AddRangesSettingsWithSharedComponent(authoring, ranges, multiplier, entity);
@@ -67,7 +71,7 @@ namespace Task3.Authoring
                 AddComponent<IsUninitializedTag>(entity);
             }
 
-            private void AddRangesSettingsWithSharedComponent(RangeObjectAuthoring authoring, float[] ranges, float multiplier,
+            private void AddRangesSettingsWithSharedComponent(RangeObjectAuthoring authoring, RangeSettings[] ranges, float multiplier,
                 Entity entity)
             {
                 if (ranges.Length < 1)
@@ -78,51 +82,55 @@ namespace Task3.Authoring
                 
                 var blobRangesBuilder = new BlobBuilder(Allocator.Temp);
                 ref BlobRanges blobRanges = ref blobRangesBuilder.ConstructRoot<BlobRanges>();
-                var arrayRangesBuilder = blobRangesBuilder.Allocate(ref blobRanges.Values, ranges.Length);
+                var arrayRangesBuilder = blobRangesBuilder.Allocate(ref blobRanges.Values, ranges.Length + 1);
 
-                for (int i = 0, j = 0; i < ranges.Length + 1; i += 2, j++)
+                //convert to ranges todo wrap in a method
+                for (int i = 0; i <= ranges.Length; i ++)
                 {
+                    int? maxIndex = i < ranges.Length ? i : null;
+                    int? minIndex = i - 1 < 0 ? null : maxIndex.HasValue ? i - 1 : ranges.Length - 1;
                     var limits = new RangeLimits()
                     {
-                        Min = i - 1 < 0 ? 0 :
-                            i - 1 < ranges.Length ? ranges[i - 1] * multiplier : ranges[^1] * multiplier,
-                        Max = i < ranges.Length ? ranges[i] * multiplier : float.PositiveInfinity
+                        Min = minIndex.HasValue ? ranges[minIndex.Value].NormalizedRange * multiplier : 0,
+                        Max = maxIndex.HasValue ? ranges[maxIndex.Value].NormalizedRange * multiplier : float.PositiveInfinity
                     };
                     
-                    arrayRangesBuilder[j] = limits;
+                    arrayRangesBuilder[i] = limits;
                 }
                 
                 var blobAssetRanges = blobRangesBuilder.CreateBlobAssetReference<BlobRanges>(Allocator.Persistent);
-                //blobRangesBuilder.Dispose();
                 
                 var blobRangesColorsBuilder = new BlobBuilder(Allocator.Temp);
                 ref var blobRangesColors = ref blobRangesColorsBuilder.ConstructRoot<BlobRangesColors>();
-                var arrayRangesColorsBuilder = blobRangesColorsBuilder.Allocate(ref blobRangesColors.Values, ranges.Length);
+                var arrayRangesColorsBuilder = blobRangesColorsBuilder.Allocate(ref blobRangesColors.Values, ranges.Length + 1);
                 
                 for (int i = 0; i < ranges.Length; i++)
                 {
                     arrayRangesColorsBuilder[i] = new float4(
-                        Random.value,
-                        Random.value,
-                        Random.value,
-                        1.0f);
+                        ranges[i].RangeColor.r,
+                        ranges[i].RangeColor.g,
+                        ranges[i].RangeColor.b,
+                        ranges[i].RangeColor.a);
                 }
+                
+                arrayRangesColorsBuilder[^1] = new float4(
+                    authoring._infinityColor.r,
+                    authoring._infinityColor.g,
+                    authoring._infinityColor.b,
+                    authoring._infinityColor.a);
                 
                 BlobAssetReference<BlobRangesColors> blobAssetRangesColors =
                     blobRangesColorsBuilder.CreateBlobAssetReference<BlobRangesColors>(Allocator.Persistent);
-                //blobRangesColorsBuilder.Dispose();
                 
                 AddSharedComponent(entity, new RangeSettingsShared()
                 {
-                    Radius = authoring.GetComponent<MeshFilter>().sharedMesh.bounds.extents.magnitude,
+                    PrefabRadius = authoring.GetComponent<MeshFilter>().sharedMesh.bounds.extents.magnitude,
                     Ranges = blobAssetRanges,
                     RangesColors = blobAssetRangesColors
                 });
                 
-                Debug.Log($"Blob asset: {blobAssetRangesColors.IsCreated}, count: {blobAssetRangesColors.Value.Values.Length}, new array count: {arrayRangesColorsBuilder.Length}");
-                
                 AddBlobAsset<BlobRanges>(ref blobAssetRanges, out var hash);
-                //AddBlobAsset<BlobRangesColors>(ref blobAssetRangesColors, out var hashColors);
+                AddBlobAsset<BlobRangesColors>(ref blobAssetRangesColors, out var hashColors);
                 
                 blobRangesBuilder.Dispose();
                 blobRangesColorsBuilder.Dispose();
@@ -133,7 +141,7 @@ namespace Task3.Authoring
                 AddComponent(entity, new RangeReferenceDistanceSqComponent());
                 
                 AddComponent(entity, new ChangedRangeComponent());
-                SetComponentEnabled<ChangedRangeComponent>(entity, false);
+                SetComponentEnabled<ChangedRangeComponent>(entity, true);
             }
         }
     }

@@ -121,11 +121,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75d4b0f8917942a2a0483a286f9c5cf7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _rangesMultiplier: 150
-  _normalizedRanges:
-  - 0.237
-  - 0.565
-  - 0.798
+  _rangesMultiplier: 300
+  _rangeSettings:
+  - NormalizedRange: 0.348
+    RangeColor: {r: 0.08562, g: 0.9716981, b: 0, a: 0}
+  - NormalizedRange: 0.559
+    RangeColor: {r: 0.5943396, g: 0, b: 0, a: 0}
+  - NormalizedRange: 1
+    RangeColor: {r: 0.0047169924, g: 1, b: 0.9589256, a: 1}
+  _infinityColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 0}
 --- !u!114 &1173973778931749069
 MonoBehaviour:
   m_ObjectHideFlags: 0

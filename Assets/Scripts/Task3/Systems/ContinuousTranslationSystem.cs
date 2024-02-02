@@ -19,10 +19,53 @@ namespace Task3.Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var aspect in SystemAPI.Query<TranslationAspect>().WithOptions(EntityQueryOptions.FilterWriteGroup))//WithNone<IsUninitializedTag>())
+            var translationQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld, TranslationBoundsSharedComponent>()
+                .WithAllRW<LocalTransform, HeadingComponent>().Build();
+            // foreach (var aspect in SystemAPI.Query<TranslationAspect>().WithOptions(EntityQueryOptions.FilterWriteGroup))//WithNone<IsUninitializedTag>())
+            // {
+            //     aspect.Translate(SystemAPI.Time.DeltaTime);
+            // }
+            var dt = SystemAPI.Time.DeltaTime;
+            var translationJob = new TranslationJob()
             {
-                aspect.Translate(SystemAPI.Time.DeltaTime);
+                DeltaTime = dt,
+            }.ScheduleParallel(translationQuery, state.Dependency);
+
+            state.Dependency = translationJob;
+        }
+    }
+    
+    [BurstCompile]
+    public partial struct TranslationJob : IJobEntity
+    {
+        public float DeltaTime;
+        public void Execute(in LocalToWorld localToWorld, ref LocalTransform localTransform,
+            ref HeadingComponent heading, in TranslationBoundsSharedComponent bounds)
+        {
+            ref var direction = ref heading.Value;
+            ref var position = ref localTransform.Position;
+            localTransform.Rotation = localToWorld.Rotation;//todo write only the first time
+            position = localToWorld.Position + direction * DeltaTime * 10f;//todo speed
+
+            //_localTransform.ValueRW.Position = position;
+            
+            const int vectorLength = 3;
+
+            for (int i = 0; i < vectorLength; i++)
+            {
+                if (IsOutOfBounds(i, localTransform, bounds))
+                {
+                    direction[i] *= -1;
+                }
             }
         }
+        
+        private bool IsOutOfBounds(int axisIndex, LocalTransform localTransform, TranslationBoundsSharedComponent bounds)
+        {
+            var origin = bounds.Origin[axisIndex];
+            var extent = bounds.BoundsExtents[axisIndex];
+            var position = localTransform.Position[axisIndex];
+            return position > origin + extent || position < origin - extent;
+        } 
     }
 }

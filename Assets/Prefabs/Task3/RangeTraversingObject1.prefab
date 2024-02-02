@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 8666333129660727789}
   - component: {fileID: 204669882730927904}
   - component: {fileID: -5924279614918341225}
-  - component: {fileID: -6162941266961970280}
   - component: {fileID: -1269626891921435612}
   m_Layer: 0
   m_Name: RangeTraversingObject1
@@ -122,24 +121,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75d4b0f8917942a2a0483a286f9c5cf7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _rangesMultiplier: 100
-  _normalizedRanges:
-  - 0.131
-  - 0.307
-  - 0.52
-  - 0.725
---- !u!114 &-6162941266961970280
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7030887463748312555}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c504884f71cd46708ed6be40f07f2805, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  _rangesMultiplier: 200
+  _rangeSettings:
+  - NormalizedRange: 0.114
+    RangeColor: {r: 0.8207547, g: 0.7810003, b: 0.15873085, a: 1}
+  - NormalizedRange: 0.33
+    RangeColor: {r: 0.08722159, g: 0.6603774, b: 0, a: 0.9137255}
+  - NormalizedRange: 0.538
+    RangeColor: {r: 0, g: 0.74881876, b: 0.9433962, a: 0.7019608}
+  - NormalizedRange: 0.727
+    RangeColor: {r: 0.46749038, g: 0.05339978, b: 0.754717, a: 0.7294118}
 --- !u!114 &-1269626891921435612
 MonoBehaviour:
   m_ObjectHideFlags: 0

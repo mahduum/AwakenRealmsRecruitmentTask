@@ -2,6 +2,7 @@
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
+using UnityEngine.Serialization;
 
 namespace Task3.AuthoringAndComponents
 {
@@ -11,7 +12,7 @@ namespace Task3.AuthoringAndComponents
     //or this component will not be able to write to it?
     public struct RangeSettingsShared : ISharedComponentData
     {
-        public float Radius;
+        public float PrefabRadius;//todo must include for precision
         public BlobAssetReference<BlobRanges> Ranges;
         public BlobAssetReference<BlobRangesColors> RangesColors;
     }

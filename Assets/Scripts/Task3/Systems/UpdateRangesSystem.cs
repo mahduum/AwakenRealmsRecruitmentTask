@@ -1,7 +1,11 @@
-﻿using Task3.AuthoringAndComponents;
+﻿using System;
+using JetBrains.Annotations;
+using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -33,7 +37,8 @@ namespace Task3.Systems
 
             float deltaTime = SystemAPI.Time.DeltaTime;
 
-            //todo add or activate component crossing range that will activate glow effect
+            //todo add or activate component cros
+            //sing range that will activate glow effect
             foreach (var rangeGroup in rangeTypeGroups)
             {
                 rangeSettingsQuery.AddSharedComponentFilter(rangeGroup);
@@ -45,36 +50,13 @@ namespace Task3.Systems
                     continue;
                 }
                 
-                //todo later, hashmap with cells by radius
-                //var hashMap = new NativeParallelMultiHashMap<int, int>(rangersCount, world.UpdateAllocator.ToAllocator);
-
-                var entities = rangeSettingsQuery.ToEntityArray(Allocator.Temp);
-
-                foreach (var entity in entities)
+                var updateRangeJob = new UpdateRangeJob()
                 {
-                    var distanceSq = state.EntityManager.GetComponentData<RangeReferenceDistanceSqComponent>(entity).Value;
-                    var range = state.EntityManager.GetComponentData<RangeComponent>(entity);
-                    ref var rangesLimitsData = ref rangeGroup.Ranges.Value.Values;
-
-                    //first check the distance within its own recorded range and if it is outside then exclude the index from next check
-                    if (IsWithinRange(distanceSq, rangesLimitsData[range.CurrentRangeIndex]))//todo return out index to omit in next search
-                    {
-                            continue;
-                    }
-                    
-                    //if we are here that means that object changed range
-                    for (int i = 0; i < rangesLimitsData.Length; i++)
-                    {
-                        if (IsWithinRange(distanceSq, rangesLimitsData[i]))
-                        {
-                            //is in range save limits, indices and compare whether it changed or not
-                            state.EntityManager.SetComponentData(entity, new RangeComponent(){CurrentRangeIndex = i});
-                            _changedRangeLookup.SetComponentEnabled(entity, true);
-                            break;
-                        }
-                    }
-                }
-                //...
+                    ChangedRangeLookup = _changedRangeLookup,
+                    RangeGroupSettings = rangeGroup,
+                };
+                
+                state.Dependency = updateRangeJob.ScheduleParallel(rangeSettingsQuery, state.Dependency);
                 
                 rangeSettingsQuery.AddDependency(state.Dependency);
                 rangeSettingsQuery.ResetFilter();
@@ -83,11 +65,6 @@ namespace Task3.Systems
             rangeTypeGroups.Dispose();
         }
 
-        private static bool IsWithinRange(float distanceSq, RangeLimits rangeLimits)
-        {
-            return distanceSq >= math.pow(rangeLimits.Min, 2) && distanceSq < math.pow(rangeLimits.Max, 2);
-        } 
-
         [BurstCompile]
         public void OnDestroy(ref SystemState state)
         {
@@ -95,8 +72,42 @@ namespace Task3.Systems
         }
     }
 
+    [BurstCompile]
     public partial struct UpdateRangeJob : IJobEntity
     {
+        [NativeDisableContainerSafetyRestriction, NativeDisableParallelForRestriction] 
+        public ComponentLookup<ChangedRangeComponent> ChangedRangeLookup;
+        public RangeSettingsShared RangeGroupSettings;
+
+        [UsedImplicitly]
+        private void Execute(Entity entity, ref RangeComponent range, in RangeReferenceDistanceSqComponent distanceSqComponent)
+        {
+            var distanceSq = distanceSqComponent.Value;
+            ref var rangesLimitsData = ref RangeGroupSettings.Ranges.Value.Values;
+
+            //first check the distance within its own recorded range and if it is outside then exclude the index from next check
+            if (IsWithinRange(distanceSq, rangesLimitsData[range.CurrentRangeIndex]))
+            {
+                return;
+            }
+                    
+            //if we are here that means that object changed range
+            for (int i = 0; i < rangesLimitsData.Length; i++)
+            {
+                if (IsWithinRange(distanceSq, rangesLimitsData[i]))
+                {
+                    //is in range save limits, indices and compare whether it changed or not
+                    range = new RangeComponent(){CurrentRangeIndex = i};
+                    ChangedRangeLookup.SetComponentEnabled(entity, true);
+                    break;
+                }
+            }
+        }
         
+        private static bool IsWithinRange(float distanceSq, RangeLimits rangeLimits)
+        {
+            return distanceSq >= math.lengthsq(rangeLimits.Min) && distanceSq < math.lengthsq(rangeLimits.Max);
+        } 
+
     }
 }
