@@ -69,7 +69,7 @@ namespace Task3.Systems
                      HighPrecisionLookup = _highPrecisionLookup,
                      MediumPrecisionLookup = _mediumPrecisionLookup,
                      LowPrecisionLookup = _lowPrecisionLookup,
-                     LowestPrecisionLookup = _lowestPrecisionLookup
+                     LowestPrecisionLookup = _lowestPrecisionLookup,
                  };
 
                 Dependency = processingJobHandle.ScheduleParallel(query, Dependency);

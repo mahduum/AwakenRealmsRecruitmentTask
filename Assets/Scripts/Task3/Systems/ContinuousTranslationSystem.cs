@@ -13,7 +13,7 @@ namespace Task3.Systems
         public void OnUpdate(ref SystemState state)
         {
             var translationQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld, TranslationBoundsSharedComponent>()
-                .WithAllRW<LocalTransform, HeadingComponent>().Build();
+                .WithAllRW<LocalTransform, HeadingComponent>().WithNone<PlayerComponent>().Build();
 
             var dt = SystemAPI.Time.DeltaTime;
             var translationJob = new TranslationJob()

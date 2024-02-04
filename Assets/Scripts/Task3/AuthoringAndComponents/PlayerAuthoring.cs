@@ -1,4 +1,5 @@
 ﻿using Unity.Entities;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Task3.AuthoringAndComponents
@@ -15,13 +16,8 @@ namespace Task3.AuthoringAndComponents
         }
     }
 
+    [WriteGroup(typeof(LocalTransform))]
     public struct PlayerComponent : IComponentData
     {
-        //public float TranslationDelta;
-    }
-
-    public struct NeedsCameraPositionUpdate : IComponentData, IEnableableComponent//todo?
-    {
-        
     }
 }

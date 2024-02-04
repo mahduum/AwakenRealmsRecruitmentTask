@@ -28,19 +28,13 @@ namespace Task3.AuthoringAndComponents
         public float Value;
     }
     
-    //Used for testing as a device to query entities whether they should update current frame
-    //I didn't include this in solution as it produced no noticeable effect and instead produced
-    //a substantial overhead on its own, sometimes it is more efficient to perform some little
-    //demanding calculations en masse than to block the command buffer with structural changes
-    //I didn't remove the code as a testimony that I did experiment with suggested solutions
-    //as presented in the task description.
-    [Obsolete]
-    public struct RangeDeltaTimeComponent : IComponentData, IEnableableComponent
-    {
-        public int UpdateFrame;
-        public int CurrentFrame;
-        public float DeltaTime;
-    }
+    /*Unused testing component, more detailed description in UpdateDeltaTimeSystem.cs*/
+    // public struct RangeDeltaTimeComponent : IComponentData, IEnableableComponent
+    // {
+    //     public int UpdateFrame;
+    //     public int CurrentFrame;
+    //     public float DeltaTime;
+    // }
 
     public struct HighPrecisionRange : IComponentData, IEnableableComponent
     {
