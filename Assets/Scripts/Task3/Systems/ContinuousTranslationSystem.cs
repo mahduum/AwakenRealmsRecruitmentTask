@@ -1,5 +1,4 @@
-﻿using Task3.Aspects;
-using Task3.AuthoringAndComponents;
+﻿using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
@@ -10,21 +9,12 @@ namespace Task3.Systems
     [UpdateBefore(typeof(TransformSystemGroup))]
     public partial struct ContinuousTranslationSystem : ISystem
     {
-        //[BurstCompile]
-        // public void OnCreate(ref SystemState state)
-        // {
-        //     
-        // }
-
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var translationQuery = SystemAPI.QueryBuilder().WithAll<LocalToWorld, TranslationBoundsSharedComponent>()
                 .WithAllRW<LocalTransform, HeadingComponent>().Build();
-            // foreach (var aspect in SystemAPI.Query<TranslationAspect>().WithOptions(EntityQueryOptions.FilterWriteGroup))//WithNone<IsUninitializedTag>())
-            // {
-            //     aspect.Translate(SystemAPI.Time.DeltaTime);
-            // }
+
             var dt = SystemAPI.Time.DeltaTime;
             var translationJob = new TranslationJob()
             {
@@ -44,10 +34,8 @@ namespace Task3.Systems
         {
             ref var direction = ref heading.Value;
             ref var position = ref localTransform.Position;
-            localTransform.Rotation = localToWorld.Rotation;//todo write only the first time
-            position = localToWorld.Position + direction * DeltaTime * 10f;//todo speed
-
-            //_localTransform.ValueRW.Position = position;
+            localTransform.Rotation = localToWorld.Rotation;
+            position = localToWorld.Position + direction * DeltaTime * 10f;
             
             const int vectorLength = 3;
 

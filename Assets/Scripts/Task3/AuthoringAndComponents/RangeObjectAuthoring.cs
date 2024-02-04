@@ -1,11 +1,8 @@
 ﻿using System;
-using Task3.Aspects;
-using Task3.AuthoringAndComponents;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Task3.AuthoringAndComponents
 {
@@ -30,26 +27,34 @@ namespace Task3.AuthoringAndComponents
     {
         public float Value;
     }
-
-    public struct SkipFrameCounter : IComponentData, IEnableableComponent
+    
+    //Used for testing as a device to query entities whether they should update current frame
+    //I didn't include this in solution as it produced no noticeable effect and instead produced
+    //a substantial overhead on its own, sometimes it is more efficient to perform some little
+    //demanding calculations en masse than to block the command buffer with structural changes
+    //I didn't remove the code as a testimony that I did experiment with suggested solutions
+    //as presented in the task description.
+    [Obsolete]
+    public struct RangeDeltaTimeComponent : IComponentData, IEnableableComponent
     {
-        public int SkippedFramesCount;
+        public int UpdateFrame;
+        public int CurrentFrame;
         public float DeltaTime;
     }
 
-    public struct HighPrecisionRange : IComponentData
+    public struct HighPrecisionRange : IComponentData, IEnableableComponent
     {
     }
     
-    public struct MediumPrecisionRange : IComponentData
+    public struct MediumPrecisionRange : IComponentData, IEnableableComponent
     {
     }
     
-    public struct LowPrecisionRange : IComponentData
+    public struct LowPrecisionRange : IComponentData, IEnableableComponent
     {
     }
     
-    public struct LowestPrecisionRange : IComponentData
+    public struct LowestPrecisionRange : IComponentData, IEnableableComponent
     {
     }
     
@@ -115,8 +120,6 @@ namespace Task3.AuthoringAndComponents
                 AddComponent(entity, new HeadingComponent()
                 {
                 });
-                
-                AddComponent<IsUninitializedTag>(entity);
             }
 
             private void AddRangesSettingsWithSharedComponent(RangeObjectAuthoring authoring, RangeSettings[] ranges, float multiplier,
@@ -128,48 +131,10 @@ namespace Task3.AuthoringAndComponents
                     return;
                 }
                 
-                var blobRangesBuilder = new BlobBuilder(Allocator.Temp);
-                ref BlobRanges blobRanges = ref blobRangesBuilder.ConstructRoot<BlobRanges>();
-                var arrayRangesBuilder = blobRangesBuilder.Allocate(ref blobRanges.Values, ranges.Length + 1);
+                var blobRangesBuilder = CreateBlobAssetRanges(ranges, multiplier, out var blobAssetRanges);
 
-                //convert to ranges todo wrap in a method
-                for (int i = 0; i <= ranges.Length; i ++)
-                {
-                    int? maxIndex = i < ranges.Length ? i : null;
-                    int? minIndex = i - 1 < 0 ? null : maxIndex.HasValue ? i - 1 : ranges.Length - 1;
-                    var limits = new RangeLimits()
-                    {
-                        Min = minIndex.HasValue ? ranges[minIndex.Value].NormalizedRange * multiplier : 0,
-                        Max = maxIndex.HasValue ? ranges[maxIndex.Value].NormalizedRange * multiplier : float.PositiveInfinity
-                    };
-                    
-                    arrayRangesBuilder[i] = limits;
-                }
-                
-                var blobAssetRanges = blobRangesBuilder.CreateBlobAssetReference<BlobRanges>(Allocator.Persistent);
-                
-                var blobRangesColorsBuilder = new BlobBuilder(Allocator.Temp);
-                ref var blobRangesColors = ref blobRangesColorsBuilder.ConstructRoot<BlobRangesColors>();
-                var arrayRangesColorsBuilder = blobRangesColorsBuilder.Allocate(ref blobRangesColors.Values, ranges.Length + 1);
-                
-                for (int i = 0; i < ranges.Length; i++)
-                {
-                    arrayRangesColorsBuilder[i] = new float4(
-                        ranges[i].RangeColor.r,
-                        ranges[i].RangeColor.g,
-                        ranges[i].RangeColor.b,
-                        ranges[i].RangeColor.a);
-                }
-                
-                arrayRangesColorsBuilder[^1] = new float4(
-                    authoring._infinityColor.r,
-                    authoring._infinityColor.g,
-                    authoring._infinityColor.b,
-                    authoring._infinityColor.a);
-                
-                BlobAssetReference<BlobRangesColors> blobAssetRangesColors =
-                    blobRangesColorsBuilder.CreateBlobAssetReference<BlobRangesColors>(Allocator.Persistent);
-                
+                var blobRangesColorsBuilder = CreateBlobAssetColorRanges(authoring, ranges, out var blobAssetRangesColors);
+
                 AddSharedComponent(entity, new RangeSettingsShared()
                 {
                     PrefabRadius = authoring.GetComponent<MeshFilter>().sharedMesh.bounds.extents.magnitude,
@@ -190,6 +155,69 @@ namespace Task3.AuthoringAndComponents
                 
                 AddComponent(entity, new ChangedRangeComponent());
                 SetComponentEnabled<ChangedRangeComponent>(entity, true);
+                
+                AddComponent(entity, new HighPrecisionRange());
+                SetComponentEnabled<HighPrecisionRange>(entity, true);
+
+                AddComponent(entity, new MediumPrecisionRange());
+                SetComponentEnabled<MediumPrecisionRange>(entity, false);
+
+                AddComponent(entity, new LowPrecisionRange());
+                SetComponentEnabled<LowPrecisionRange>(entity, false);
+
+                AddComponent(entity, new LowestPrecisionRange());
+                SetComponentEnabled<LowestPrecisionRange>(entity, false);
+
+            }
+
+            private static BlobBuilder CreateBlobAssetColorRanges(RangeObjectAuthoring authoring, RangeSettings[] ranges,
+                out BlobAssetReference<BlobRangesColors> blobAssetRangesColors)
+            {
+                var blobRangesColorsBuilder = new BlobBuilder(Allocator.Temp);
+                ref var blobRangesColors = ref blobRangesColorsBuilder.ConstructRoot<BlobRangesColors>();
+                var arrayRangesColorsBuilder = blobRangesColorsBuilder.Allocate(ref blobRangesColors.Values, ranges.Length + 1);
+                
+                for (int i = 0; i < ranges.Length; i++)
+                {
+                    arrayRangesColorsBuilder[i] = new float4(
+                        ranges[i].RangeColor.r,
+                        ranges[i].RangeColor.g,
+                        ranges[i].RangeColor.b,
+                        ranges[i].RangeColor.a);
+                }
+                
+                arrayRangesColorsBuilder[^1] = new float4(
+                    authoring._infinityColor.r,
+                    authoring._infinityColor.g,
+                    authoring._infinityColor.b,
+                    authoring._infinityColor.a);
+                
+                blobAssetRangesColors = blobRangesColorsBuilder.CreateBlobAssetReference<BlobRangesColors>(Allocator.Persistent);
+                return blobRangesColorsBuilder;
+            }
+
+            private static BlobBuilder CreateBlobAssetRanges(RangeSettings[] ranges, float multiplier,
+                out BlobAssetReference<BlobRanges> blobAssetRanges)
+            {
+                var blobRangesBuilder = new BlobBuilder(Allocator.Temp);
+                ref BlobRanges blobRanges = ref blobRangesBuilder.ConstructRoot<BlobRanges>();
+                var arrayRangesBuilder = blobRangesBuilder.Allocate(ref blobRanges.Values, ranges.Length + 1);
+                
+                for (int i = 0; i <= ranges.Length; i ++)
+                {
+                    int? maxIndex = i < ranges.Length ? i : null;
+                    int? minIndex = i - 1 < 0 ? null : maxIndex.HasValue ? i - 1 : ranges.Length - 1;
+                    var limits = new RangeLimits()
+                    {
+                        Min = minIndex.HasValue ? ranges[minIndex.Value].NormalizedRange * multiplier : 0,
+                        Max = maxIndex.HasValue ? ranges[maxIndex.Value].NormalizedRange * multiplier : float.PositiveInfinity
+                    };
+                    
+                    arrayRangesBuilder[i] = limits;
+                }
+                
+                blobAssetRanges = blobRangesBuilder.CreateBlobAssetReference<BlobRanges>(Allocator.Persistent);
+                return blobRangesBuilder;
             }
         }
     }

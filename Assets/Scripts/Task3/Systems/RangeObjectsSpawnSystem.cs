@@ -1,5 +1,4 @@
-﻿using Task3.Aspects;
-using Task3.AuthoringAndComponents;
+﻿using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -7,7 +6,6 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using Random = Unity.Mathematics.Random;
 
 namespace Task3.Systems
@@ -30,7 +28,6 @@ namespace Task3.Systems
 
             var endSim = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
             var endSimBuff = endSim.CreateCommandBuffer(world);
-            var endSimBuffParallel = endSimBuff.AsParallelWriter();
             
             foreach (var (rangeObjTypeGroup, rangeObjTypeGroupLocalToWorld, entity) in
                      SystemAPI.Query<RefRO<RangeObjectTypeGroup>, RefRO<LocalToWorld>>()
@@ -46,8 +43,7 @@ namespace Task3.Systems
                     BoundsExtents = rangeObjTypeGroup.ValueRO.Extents,
                     Origin = rangeObjTypeGroupLocalToWorld.ValueRO.Position
                 });
-
-                Debug.Log($"Spawning num entities: {rangeObjTypeGroup.ValueRO.Count} with entity {entity.Index}");
+                
                 var setRandomObjectLocalToWorldJob = new SetRangeObjectLocalToWorldJob()
                 {
                     LocalToWorldFromEntity = localToWorldLookup,
@@ -56,7 +52,6 @@ namespace Task3.Systems
                     Radius = rangeObjTypeGroup.ValueRO.PrefabRadius,
                     Extents = rangeObjTypeGroup.ValueRO.Extents,
                     HeadingFromEntity = headingComponentLookup,
-                    Ecb = endSimBuffParallel
                 };
                 
                 state.Dependency = setRandomObjectLocalToWorldJob.Schedule(rangeObjTypeGroup.ValueRO.Count, 64, state.Dependency);
@@ -64,7 +59,6 @@ namespace Task3.Systems
                 
                 endSimBuff.DestroyEntity(entity);
             }
-            //state.Dependency.Complete();//todo delete
         }
     }
 
@@ -80,8 +74,6 @@ namespace Task3.Systems
         public float3 Center;
         public float3 Extents;
         public float Radius;
-
-        public EntityCommandBuffer.ParallelWriter Ecb;
 
         public void Execute(int i)
         {
@@ -101,7 +93,6 @@ namespace Task3.Systems
 
             LocalToWorldFromEntity[entity] = localToWorld;
             HeadingFromEntity[entity] = new HeadingComponent() {Value = dir};
-            Ecb.RemoveComponent<IsUninitializedTag>(i, entity);//todo not needed
         }
     }
 }

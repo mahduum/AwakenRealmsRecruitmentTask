@@ -1,10 +1,7 @@
 ﻿using System;
-using Task3.Aspects;
 using Unity.Entities;
 using UnityEngine;
 using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEngine.Serialization;
 
 namespace Task3.AuthoringAndComponents
 {

@@ -1,47 +1,36 @@
-﻿using System;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
-using UnityEngine;
 
 namespace Task3.Systems
 {
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
     [UpdateAfter(typeof(RangeDistanceCollectorSystem))]
-    public partial struct UpdateRangesSystem : ISystem//todo make job set ranges that will run only once per newly spawned entity, for entities without range component, it will be added
+    public partial struct DetectRangeChangeSystem : ISystem
     {
         private ComponentLookup<ChangedRangeComponent> _changedRangeLookup;
         
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            _changedRangeLookup = state.GetComponentLookup<ChangedRangeComponent>();//TODO move to separate system that detects change
+            _changedRangeLookup = state.GetComponentLookup<ChangedRangeComponent>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             _changedRangeLookup.Update(ref state);
-            //todo with hashmap grid the ranges sq component will not be necessary
             var rangeSettingsQuery = SystemAPI.QueryBuilder().WithAll<RangeComponent, RangeSettingsShared, RangeReferenceDistanceSqComponent>().Build();
-            //add different queries for range components etc.
-            //just fill the hash with locations, it can be made only after the first time
             
             var world = state.WorldUnmanaged;
             state.EntityManager.GetAllUniqueSharedComponents(out NativeList<RangeSettingsShared> rangeTypeGroups, world.UpdateAllocator.ToAllocator);
 
-            float deltaTime = SystemAPI.Time.DeltaTime;
-
-            //todo add or activate component cros
-            //sing range that will activate glow effect
             foreach (var rangeGroup in rangeTypeGroups)
             {
-                //todo wrap it in a method to process each query
                 rangeSettingsQuery.AddSharedComponentFilter(rangeGroup);
 
                 var rangersCount = rangeSettingsQuery.CalculateEntityCount();
@@ -65,14 +54,9 @@ namespace Task3.Systems
 
             rangeTypeGroups.Dispose();
         }
-
-        [BurstCompile]
-        public void OnDestroy(ref SystemState state)
-        {
-
-        }
     }
 
+    [WithDisabled(typeof(ChangedRangeComponent))]
     [BurstCompile]
     public partial struct UpdateRangeJob : IJobEntity
     {
@@ -93,11 +77,10 @@ namespace Task3.Systems
             }
                     
             //if we are here that means that object changed range
-            for (int i = 0; i < rangesLimitsData.Length; i++)//todo start from the back and check only min
+            for (int i = rangesLimitsData.Length - 1; i >= 0; i--)
             {
-                if (IsWithinRange(distanceSq, rangesLimitsData[i]))
+                if (distanceSq >= math.lengthsq(rangesLimitsData[i].Min))
                 {
-                    //is in range save limits, indices and compare whether it changed or not
                     ChangedRangeLookup.GetRefRW(entity).ValueRW.ChangedRangeIndex = i;
                     ChangedRangeLookup.SetComponentEnabled(entity, true);
                     break;
