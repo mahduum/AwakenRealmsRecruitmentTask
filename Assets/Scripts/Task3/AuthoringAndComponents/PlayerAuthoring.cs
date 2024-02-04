@@ -20,7 +20,7 @@ namespace Task3.AuthoringAndComponents
         //public float TranslationDelta;
     }
 
-    public struct NeedsCameraPositionUpdate : IComponentData, IEnableableComponent
+    public struct NeedsCameraPositionUpdate : IComponentData, IEnableableComponent//todo?
     {
         
     }

@@ -28,7 +28,7 @@ namespace Task3.Systems
         {
             _changedRangeLookup.Update(ref state);
             //todo with hashmap grid the ranges sq component will not be necessary
-            var rangeSettingsQuery = SystemAPI.QueryBuilder().WithAll<RangeSettingsShared, RangeReferenceDistanceSqComponent>().WithAllRW<RangeComponent>().Build();
+            var rangeSettingsQuery = SystemAPI.QueryBuilder().WithAll<RangeComponent, RangeSettingsShared, RangeReferenceDistanceSqComponent>().Build();
             //add different queries for range components etc.
             //just fill the hash with locations, it can be made only after the first time
             
@@ -41,6 +41,7 @@ namespace Task3.Systems
             //sing range that will activate glow effect
             foreach (var rangeGroup in rangeTypeGroups)
             {
+                //todo wrap it in a method to process each query
                 rangeSettingsQuery.AddSharedComponentFilter(rangeGroup);
 
                 var rangersCount = rangeSettingsQuery.CalculateEntityCount();
@@ -80,7 +81,7 @@ namespace Task3.Systems
         public RangeSettingsShared RangeGroupSettings;
 
         [UsedImplicitly]
-        private void Execute(Entity entity, ref RangeComponent range, in RangeReferenceDistanceSqComponent distanceSqComponent)
+        private void Execute(Entity entity, in RangeComponent range, in RangeReferenceDistanceSqComponent distanceSqComponent)
         {
             var distanceSq = distanceSqComponent.Value;
             ref var rangesLimitsData = ref RangeGroupSettings.Ranges.Value.Values;
@@ -92,12 +93,12 @@ namespace Task3.Systems
             }
                     
             //if we are here that means that object changed range
-            for (int i = 0; i < rangesLimitsData.Length; i++)
+            for (int i = 0; i < rangesLimitsData.Length; i++)//todo start from the back and check only min
             {
                 if (IsWithinRange(distanceSq, rangesLimitsData[i]))
                 {
                     //is in range save limits, indices and compare whether it changed or not
-                    range = new RangeComponent(){CurrentRangeIndex = i};
+                    ChangedRangeLookup.GetRefRW(entity).ValueRW.ChangedRangeIndex = i;
                     ChangedRangeLookup.SetComponentEnabled(entity, true);
                     break;
                 }

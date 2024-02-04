@@ -1,4 +1,5 @@
-﻿using Task3.Aspects;
+﻿using System;
+using Task3.Aspects;
 using Unity.Entities;
 using UnityEngine;
 using Unity.Mathematics;
@@ -30,6 +31,7 @@ namespace Task3.AuthoringAndComponents
         }
     }
     
+    [Serializable]
     public struct RangeObjectTypeGroup : IComponentData
     {
         public Entity Prefab;

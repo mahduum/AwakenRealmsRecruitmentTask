@@ -7,8 +7,56 @@ using Unity.Mathematics;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Task3.Authoring
+namespace Task3.AuthoringAndComponents
 {
+#region Components
+
+    public struct ChangedRangeComponent : IComponentData, IEnableableComponent
+    {
+        public int ChangedRangeIndex;
+    }
+
+    public struct RangeComponent : IComponentData
+    {
+        public int CurrentRangeIndex;
+    }
+
+    public struct HeadingComponent : IComponentData
+    {
+        public float3 Value;
+    }
+    
+    public struct RangeReferenceDistanceSqComponent : IComponentData
+    {
+        public float Value;
+    }
+
+    public struct SkipFrameCounter : IComponentData, IEnableableComponent
+    {
+        public int SkippedFramesCount;
+        public float DeltaTime;
+    }
+
+    public struct HighPrecisionRange : IComponentData
+    {
+    }
+    
+    public struct MediumPrecisionRange : IComponentData
+    {
+    }
+    
+    public struct LowPrecisionRange : IComponentData
+    {
+    }
+    
+    public struct LowestPrecisionRange : IComponentData
+    {
+    }
+    
+#endregion
+
+#region Authoring
+
     [Serializable]
     public class RangeSettings
     {
@@ -145,4 +193,5 @@ namespace Task3.Authoring
             }
         }
     }
+#endregion
 }

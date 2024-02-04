@@ -1,4 +1,5 @@
-﻿using Task3.AuthoringAndComponents;
+﻿using System;
+using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -9,14 +10,17 @@ using Random = UnityEngine.Random;
 
 namespace Task3.Systems
 {
+    [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    [UpdateAfter(typeof(UpdateRangesSystem))]
     [BurstCompile]
     public partial class ChangedRangeProcessingSystem : SystemBase
     {
         [BurstCompile]
         protected override void OnUpdate()
         {
-            var query = SystemAPI.QueryBuilder().WithAll<RangeComponent, RangeSettingsShared>().WithAllRW<ChangedRangeComponent, HDRPMaterialPropertyBaseColor>().Build();
-            
+            var endSimSystem = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+            var endSimBuffer = endSimSystem.CreateCommandBuffer(World.Unmanaged);
+            var query = SystemAPI.QueryBuilder().WithAll<ChangedRangeComponent, RangeSettingsShared>().WithAllRW<RangeComponent, HDRPMaterialPropertyBaseColor>().Build();
             var world = World.Unmanaged;
             EntityManager.GetAllUniqueSharedComponents(out NativeList<RangeSettingsShared> rangeTypeGroups, world.UpdateAllocator.ToAllocator);
             
@@ -35,13 +39,18 @@ namespace Task3.Systems
 
                 var entities = query.ToEntityArray(World.Unmanaged.UpdateAllocator.Handle);
 
-                foreach (var entity in entities)
+                foreach (var entity in entities)//todo convert to jobs!!!
                 {
                     var rangeComponent = EntityManager.GetComponentData<RangeComponent>(entity);
+                    var changedRangeComponent = EntityManager.GetComponentData<ChangedRangeComponent>(entity);
+                    SwapRangeTagComponents(rangeComponent.CurrentRangeIndex, changedRangeComponent.ChangedRangeIndex, endSimBuffer, entity);
                     EntityManager.SetComponentEnabled<ChangedRangeComponent>(entity, false);
                     EntityManager.SetComponentData(
                         entity,
-                        new HDRPMaterialPropertyBaseColor() { Value = rangeGroupColors[rangeComponent.CurrentRangeIndex]});
+                        new RangeComponent(){CurrentRangeIndex = changedRangeComponent.ChangedRangeIndex});
+                    EntityManager.SetComponentData(
+                        entity,
+                        new HDRPMaterialPropertyBaseColor() { Value = rangeGroupColors[changedRangeComponent.ChangedRangeIndex]});
                 }
                 
                 query.AddDependency(Dependency);
@@ -49,6 +58,41 @@ namespace Task3.Systems
             }
             
             rangeTypeGroups.Dispose();
+        }
+
+        public void SwapRangeTagComponents (int changeFromIndex, int changeToIndex, EntityCommandBuffer ecb, Entity entity)
+        {
+            switch (changeFromIndex)
+            {
+                case 0:
+                    ecb.RemoveComponent<HighPrecisionRange>(entity);
+                    break;
+                case 1:
+                    ecb.RemoveComponent<MediumPrecisionRange>(entity);
+                    break;
+                case 2:
+                    ecb.RemoveComponent<LowPrecisionRange>(entity);
+                    break;
+                default:
+                    ecb.RemoveComponent<LowestPrecisionRange>(entity);
+                    break;
+            }
+            
+            switch (changeToIndex)
+            {
+                case 0:
+                    ecb.AddComponent<HighPrecisionRange>(entity);
+                    break;
+                case 1:
+                    ecb.AddComponent<MediumPrecisionRange>(entity);
+                    break;
+                case 2:
+                    ecb.AddComponent<LowPrecisionRange>(entity);
+                    break;
+                default:
+                    ecb.AddComponent<LowestPrecisionRange>(entity);
+                    break;
+            }
         }
     }
 }
