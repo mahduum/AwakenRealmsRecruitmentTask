@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: -5924279614918341225}
   - component: {fileID: 1173973778931749069}
   m_Layer: 0
-  m_Name: RangeTraversingObject4
+  m_Name: RangeObjectType4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
