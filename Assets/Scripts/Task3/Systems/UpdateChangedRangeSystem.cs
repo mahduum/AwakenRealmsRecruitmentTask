@@ -48,7 +48,7 @@ namespace Task3.Systems
                     continue;
                 }
                 
-                var endSimSystem = SystemAPI.GetSingleton<BeginPresentationEntityCommandBufferSystem.Singleton>();
+                var endSimSystem = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
                 var endSimBuffer = endSimSystem.CreateCommandBuffer(World.Unmanaged);
 
                 ref var rangeGroupColors = ref rangeGroup.RangesColors.Value.Values;
