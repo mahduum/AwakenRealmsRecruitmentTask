@@ -1,13 +1,10 @@
-﻿using System;
-using Task3.AuthoringAndComponents;
+﻿using Task3.AuthoringAndComponents;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
-using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Task3.Systems
 {

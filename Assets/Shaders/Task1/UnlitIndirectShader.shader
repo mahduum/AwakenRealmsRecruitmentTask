@@ -39,9 +39,9 @@ Shader "Unlit/UnlitIndirectShader"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             
-            UNITY_INSTANCING_BUFFER_START(Props)
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _BaseColor)
-            UNITY_INSTANCING_BUFFER_END(Props)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 
             v2f vert (appdata_base v, uint svInstanceID : SV_InstanceID)
@@ -53,7 +53,7 @@ Shader "Unlit/UnlitIndirectShader"
                 uint instanceID = GetIndirectInstanceID(svInstanceID);
                 float4 wpos = mul(_LocalToWorld[instanceID], v.vertex);
                 o.pos = mul(UNITY_MATRIX_VP, wpos);
-                o.color = UNITY_ACCESS_INSTANCED_PROP(Props, _BaseColor);
+                o.color = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
                 o.uv = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
                 return o;
             }
