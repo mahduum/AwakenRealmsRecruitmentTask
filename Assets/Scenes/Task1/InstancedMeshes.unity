@@ -660,7 +660,7 @@ MonoBehaviour:
   _mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   _sphereRadius: 19
   _instanceCount: 2000
-  _withMovementEnabled: 0
+  _withMovementEnabled: 1
 --- !u!4 &2070037078
 Transform:
   m_ObjectHideFlags: 0

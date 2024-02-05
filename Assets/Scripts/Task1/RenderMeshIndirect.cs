@@ -34,19 +34,29 @@ namespace Task1
         private bool _beganRender;
         private bool _buffersAndDataInitialized = false;
 
-        void Awake()
+        private void Awake()
+        {
+            DisposeAll();
+        }
+
+        void Start()
         {
             InitializeBuffersAndData();
         }
 
         private void OnValidate()
         {
+            DisposeAll();
             InitializeBuffersAndData();
         }
 
         private void InitializeBuffersAndData()
         {
-            //DisposeAll();
+            if (_jobHandle.IsCompleted == false)
+            {
+                _jobHandle.Complete();
+            }
+            
             InitializeBuffers();
             InitializeData();
             _buffersAndDataInitialized = true;
@@ -77,13 +87,19 @@ namespace Task1
             _baseColors = new Vector4[CommandsCount * (int) _instanceCount];
         }
 
-        void OnDisable()
+        void OnApplicationQuit()
         {
+            if (_beganRender)
+            {
+                _transformsBuffer.UnlockBufferAfterWrite<float4x4>((int)_instanceCount * CommandsCount);
+                _beganRender = false;
+            }
             DisposeAll();
         }
 
         private void DisposeAll()
         {
+            _jobHandle.Complete();
             _commandBuffer?.Release();
             _commandBuffer?.Dispose();
             _transformsBuffer?.Release();
@@ -100,7 +116,7 @@ namespace Task1
                 InitializeBuffersAndData();
             }
             
-            if (_withMovementEnabled)
+            if (_withMovementEnabled && Application.isPlaying)
             {
                 RenderIndirectMovingMeshes();
                 return;

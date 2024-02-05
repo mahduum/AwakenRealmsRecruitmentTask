@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Task1
@@ -49,7 +48,7 @@ namespace Task1
      * - Current platform must support instancing
      */
     [ExecuteAlways]
-    public class InstancedMeshesSpawner : MonoBehaviour
+    public class RenderMeshDirect : MonoBehaviour
     {
         [SerializeField] private Mesh _mesh = default;
         [SerializeField] private Material _material = default;
@@ -100,15 +99,8 @@ namespace Task1
 
         private void DrawInstanced()
         {
-            if (_propertyBlock == null)
-            {
-                _propertyBlock = new MaterialPropertyBlock();
-                //_propertyBlock.SetVectorArray(_baseColorId, _baseColors);
-            }
-
             var rp = new RenderParams(_material);
-            
-            Graphics.RenderMeshInstanced(rp, _mesh, 0, _matrices, _instancesCount);//, _propertyBlock);
+            Graphics.RenderMeshInstanced(rp, _mesh, 0, _matrices, _instancesCount);
         }
     }
 }
