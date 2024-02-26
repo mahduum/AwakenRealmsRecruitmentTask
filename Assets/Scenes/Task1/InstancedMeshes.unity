@@ -608,9 +608,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 078c2305a7094164af797ed64aa870d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  _mesh: {fileID: 5626882400765310123, guid: b6fe4ad124fde84499d4ac2c4433d79f, type: 3}
   _material: {fileID: 2100000, guid: f7c903906cfee9d478a07848353d8d90, type: 2}
-  _instancesCount: 1023
+  _materials:
+  - {fileID: 2100000, guid: f4d3d8dea9d874d4284c57e84864fce3, type: 2}
+  - {fileID: 2100000, guid: 59b620ed1d802dc40ab1a584a2e867ab, type: 2}
+  _instancesCount: 500
   _sphereRadius: 20
 --- !u!4 &1837223661
 Transform:
@@ -656,11 +659,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16934bf90d5448e98ad33f5d55263312, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _mesh: {fileID: 5626882400765310123, guid: b6fe4ad124fde84499d4ac2c4433d79f, type: 3}
   _material: {fileID: 2100000, guid: e2cc3ab3339074c458530ca666208b6d, type: 2}
-  _mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  _sphereRadius: 19
-  _instanceCount: 2000
-  _withMovementEnabled: 1
+  _materials:
+  - {fileID: 2100000, guid: e2cc3ab3339074c458530ca666208b6d, type: 2}
+  - {fileID: 2100000, guid: 3df8b992fd3885a4e90375f6e1befb8d, type: 2}
+  _sphereRadius: 20
+  _instanceCount: 500
+  _withMovementEnabled: 0
 --- !u!4 &2070037078
 Transform:
   m_ObjectHideFlags: 0

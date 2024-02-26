@@ -9,13 +9,18 @@ namespace Task2
     {
     }
 
+    public struct Data0 : ISingletonData
+    {
+        
+    }
+
     public class Store
     {
         private readonly int _maxSingletons;
 
         private readonly ConcurrentDictionary<Type, ISingletonData> _singletons;
         
-        internal Store(int maxSingletons)
+        public Store(int maxSingletons)
         {
             if (maxSingletons <= 0)
             {
@@ -26,7 +31,7 @@ namespace Task2
             _singletons = new ConcurrentDictionary<Type, ISingletonData>();
         }
 
-        internal bool AddOrUpdate<TSingletonData>(TSingletonData singleton) where TSingletonData : struct, ISingletonData
+        public bool AddOrUpdate<TSingletonData>(TSingletonData singleton) where TSingletonData : struct, ISingletonData
         {
             Type type = typeof(TSingletonData);
             

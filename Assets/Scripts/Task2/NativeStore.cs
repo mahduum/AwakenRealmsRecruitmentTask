@@ -12,7 +12,7 @@ namespace Task2
         private NativeArray<Fixed64> _autoLayoutFixed64Array;
         
         private NativeHashMap<int, NativeReference<Fixed16>> _autoLayoutFixed16Map;
-
+        
         public NativeStore(int maxSingletons)
         {
             _autoLayoutFixed16Array = new NativeArray<Fixed16>(maxSingletons, Allocator.Domain);

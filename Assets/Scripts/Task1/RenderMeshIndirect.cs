@@ -1,4 +1,6 @@
-﻿using Unity.Burst;
+﻿using System;
+using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -8,14 +10,15 @@ using Random = UnityEngine.Random;
 
 namespace Task1
 {
-    [ExecuteAlways]
     public class RenderMeshIndirect : MonoBehaviour
     {
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int LocalToWorld = Shader.PropertyToID("_LocalToWorld");
-        
-        [SerializeField] Material _material;
+
         [SerializeField] Mesh _mesh;
+        [Tooltip("Fallback material")]
+        [SerializeField] Material _material;
+        [SerializeField] List<Material> _materials;
         [SerializeField] private float _sphereRadius = 10f;
         [SerializeField] private uint _instanceCount = 10;
         [SerializeField] private bool _withMovementEnabled = false;
@@ -26,7 +29,6 @@ namespace Task1
         const int CommandsCount = 2;
         
         NativeArray<float4x4> _matrices;
-        private Vector4[] _baseColors;
         private JobHandle _jobHandle;
 
         private MaterialPropertyBlock _propertyBlock;
@@ -34,32 +36,21 @@ namespace Task1
         private bool _beganRender;
         private bool _buffersAndDataInitialized = false;
 
-        private void Awake()
-        {
-            DisposeAll();
-        }
-
         void Start()
         {
             InitializeBuffersAndData();
         }
 
-        private void OnValidate()
-        {
-            DisposeAll();
-            InitializeBuffersAndData();
-        }
-
         private void InitializeBuffersAndData()
         {
-            if (_jobHandle.IsCompleted == false)
+            if (IsDataAvailable() == false)
             {
-                _jobHandle.Complete();
+                Debug.LogWarning("Missing assets!");
+                return;
             }
             
             InitializeBuffers();
             InitializeData();
-            _buffersAndDataInitialized = true;
         }
 
         private void InitializeData()
@@ -71,27 +62,36 @@ namespace Task1
                         Random.value * 360f, Random.value * 360f, Random.value * 360f
                     ),
                     Vector3.one * Random.Range(0.5f, 1.5f));
-                _baseColors[i] = new Vector4(Random.value, Random.value, Random.value, Random.Range(0.5f, 1f));
             }
-
+            
             _transformsBuffer.SetData(_matrices);
+            _buffersAndDataInitialized = true;
+        }
+
+        private bool IsDataAvailable()
+        {
+            if (_mesh == null || _material == null)
+            {
+                return false;
+            }
+            
+            return true;
         }
 
         private void InitializeBuffers()
         {
             _transformsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.LockBufferForWrite,
-                CommandsCount * (int)_instanceCount, UnsafeUtility.SizeOf<float4x4>());
+                (int)_instanceCount, UnsafeUtility.SizeOf<float4x4>());
             _commandBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, CommandsCount, GraphicsBuffer.IndirectDrawIndexedArgs.size);
             _indirectArgs = new GraphicsBuffer.IndirectDrawIndexedArgs[CommandsCount];
-            _matrices = new NativeArray<float4x4>(CommandsCount * (int) _instanceCount, Allocator.Persistent);
-            _baseColors = new Vector4[CommandsCount * (int) _instanceCount];
+            _matrices = new NativeArray<float4x4>((int) _instanceCount, Allocator.Persistent);
         }
 
-        void OnApplicationQuit()
+        void OnDestroy()
         {
             if (_beganRender)
             {
-                _transformsBuffer.UnlockBufferAfterWrite<float4x4>((int)_instanceCount * CommandsCount);
+                _transformsBuffer.UnlockBufferAfterWrite<float4x4>((int)_instanceCount);
                 _beganRender = false;
             }
             DisposeAll();
@@ -105,7 +105,6 @@ namespace Task1
             _transformsBuffer?.Release();
             _transformsBuffer?.Dispose();
             _matrices.Dispose();
-            _baseColors = null;
             _buffersAndDataInitialized = false;
         }
 
@@ -113,34 +112,34 @@ namespace Task1
         {
             if (_buffersAndDataInitialized == false)
             {
-                InitializeBuffersAndData();
+                Debug.LogError("Data not initialized!");
+                return;
             }
             
-            if (_withMovementEnabled && Application.isPlaying)
+            if (_withMovementEnabled)
             {
-                RenderIndirectMovingMeshes();
+                RenderIndirectMovingMeshesStart();
                 return;
             }
             
             RenderMeshesIndirect();
         }
 
-        private void RenderIndirectMovingMeshes()
+        private void LateUpdate()
         {
-            _jobHandle.Complete();
-
-            if (_beganRender)
+            if (_withMovementEnabled)
             {
-                _transformsBuffer.UnlockBufferAfterWrite<float4x4>((int)_instanceCount * CommandsCount);
-                RenderMeshesIndirect();
-                _beganRender = false;
+                RenderIndirectMovingMeshesEnd();
             }
-            
+        }
+
+        private void RenderIndirectMovingMeshesStart()
+        {
             if (_beganRender == false)
             {
                 _beganRender = true;
                 
-                var content = _transformsBuffer.LockBufferForWrite<float4x4>(0, (int)_instanceCount * CommandsCount);
+                var content = _transformsBuffer.LockBufferForWrite<float4x4>(0, (int)_matrices.Length);
                 
                 var rotateJob = new RotateJobParallel()
                 {
@@ -160,20 +159,44 @@ namespace Task1
             }
         }
 
+        private void RenderIndirectMovingMeshesEnd()
+        {
+            _jobHandle.Complete();
+            
+            if (_beganRender)
+            {
+                _transformsBuffer.UnlockBufferAfterWrite<float4x4>((int)_matrices.Length);
+                RenderMeshesIndirect();
+                _beganRender = false;
+            }
+        }
+
         private void RenderMeshesIndirect()
         {
-            _transformsBuffer.SetData(_matrices);
-            RenderParams rp = new RenderParams(_material);
-            rp.worldBounds = new Bounds(Vector3.zero, 10000 * Vector3.one); // bounds that will be used for culling
-            rp.matProps ??= _propertyBlock ?? new MaterialPropertyBlock();
-            rp.matProps.SetBuffer(LocalToWorld, _transformsBuffer);
-            rp.matProps.SetVectorArray(BaseColorId, _baseColors);
-            _indirectArgs[0].indexCountPerInstance = _mesh.GetIndexCount(0);
-            _indirectArgs[0].instanceCount = _instanceCount;
-            _indirectArgs[1].indexCountPerInstance = _mesh.GetIndexCount(0);
-            _indirectArgs[1].instanceCount = _instanceCount;
+            RenderParams[] rp = new RenderParams[2];
+            for (int i = 0; i < _mesh.subMeshCount; i++)
+            {
+                var material = i < _materials.Count ? _materials[i] : _material;
+                rp[i] = new RenderParams(material)
+                {
+                    worldBounds = new Bounds(Vector3.zero, 10000 * Vector3.one) // bounds that will be used for culling
+                };
+                
+                rp[i].matProps ??= _propertyBlock ?? new MaterialPropertyBlock();
+                rp[i].matProps.SetBuffer(LocalToWorld, _transformsBuffer);
+                
+                _indirectArgs[i].indexCountPerInstance = _mesh.GetIndexCount(i);
+                _indirectArgs[i].instanceCount = _instanceCount;
+                _indirectArgs[i].baseVertexIndex = _mesh.GetBaseVertex(i);
+                _indirectArgs[i].startIndex = _mesh.GetIndexStart(i);
+            }
+            
             _commandBuffer.SetData(_indirectArgs);
-            Graphics.RenderMeshIndirect(rp, _mesh, _commandBuffer, CommandsCount);
+
+            for (int i = 0; i < _mesh.subMeshCount; i++)
+            {
+                Graphics.RenderMeshIndirect(rp[i], _mesh, _commandBuffer, CommandsCount, i);
+            }
         }
     }
 

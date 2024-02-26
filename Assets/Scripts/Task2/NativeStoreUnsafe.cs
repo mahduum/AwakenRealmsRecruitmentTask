@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NUnit.Compatibility;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Task2
 {
@@ -78,7 +80,7 @@ namespace Task2
             {
                 throw new IndexOutOfRangeException();
             }
-
+            
             var reinterpret = _autoLayoutFixed16Array.Reinterpret<Fixed16, T>();
             reinterpret[index] = data;
         }
