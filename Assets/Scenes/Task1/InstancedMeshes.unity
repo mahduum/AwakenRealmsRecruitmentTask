@@ -666,7 +666,7 @@ MonoBehaviour:
   - {fileID: 2100000, guid: 3df8b992fd3885a4e90375f6e1befb8d, type: 2}
   _sphereRadius: 20
   _instanceCount: 500
-  _withMovementEnabled: 0
+  _withMovementEnabled: 1
 --- !u!4 &2070037078
 Transform:
   m_ObjectHideFlags: 0
