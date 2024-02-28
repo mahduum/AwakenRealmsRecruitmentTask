@@ -1,5 +1,7 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using Store;
+using UnityEngine;
 
 namespace Tests
 {
@@ -50,6 +52,9 @@ namespace Tests
             Assert.AreEqual(21, store.Value<StoreData1>().DataValue);
             Assert.AreEqual(22, store.Value<StoreData2>().DataValue);
             Assert.AreEqual(23, store.Value<StoreData3>().DataValue);
+            
+            Debug.Log("AddOrUpdate finished");
+            GC.Collect();
         }
         
         [Test]
@@ -68,15 +73,21 @@ namespace Tests
             
             Assert.AreEqual(21, store.Value<StoreData3>().DataValue);
             Assert.AreEqual(11, store.Value<StoreData1>().DataValue);
+            
+            Debug.Log("Reuse finished");
+            GC.Collect();
         }
         
         [Test]
         public void OverflowStore()
         {
-            Store.Store store = new Store.Store(1);
+            Store.Store store = new Store.Store(2);
             
             store.AddOrUpdate(new StoreData0(){DataValue = 10});
             store.AddOrUpdate(new StoreData1(){DataValue = 11});
+            
+            Debug.Log("Overflow finished");
+            GC.Collect();
         }
     }
 }
