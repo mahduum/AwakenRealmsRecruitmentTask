@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
-using Task2;
 using Unity.PerformanceTesting;
 using UnityEngine;
+using Store;
 
 // ReSharper disable once CheckNamespace
 namespace Editor.Tests
@@ -9,6 +9,11 @@ namespace Editor.Tests
     [TestFixture]
     public class ReinterpretTests
     {
+        struct Data0 : ISingletonData
+        {
+            
+        }
+        
         [Test]
         public void NativeArrayWriteAndGetData()
         {
@@ -83,7 +88,7 @@ namespace Editor.Tests
         [Test, Performance]
         public void AddOrUpdateNormal()
         {
-            var store = new Store(1);
+            var store = new Store.Store(1);
 
             var data = new Data0();
             

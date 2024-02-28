@@ -6,7 +6,7 @@
         "UnityEditor.TestRunner",
         "Unity.PerformanceTesting",
         "Unity.PerformanceTesting.Editor",
-        "Task2"
+        "Store"
     ],
     "includePlatforms": [
         "Editor"

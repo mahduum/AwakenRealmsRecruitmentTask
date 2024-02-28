@@ -1,8 +1,9 @@
 {
-    "name": "Task2",
+    "name": "Store",
     "rootNamespace": "",
     "references": [
-        "GUID:e0cd26848372d4e5c891c569017e11f1"
+        "GUID:e0cd26848372d4e5c891c569017e11f1",
+        "GUID:c668b7a00ffe56a498ddb1fc9f96f4e6"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -10,9 +11,7 @@
     "overrideReferences": false,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [
-        "UNITY_INCLUDE_TESTS"
-    ],
+    "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false
 }
